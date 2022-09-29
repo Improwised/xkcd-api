@@ -3,13 +3,10 @@ package services
 import (
 	"encoding/json"
 	"encoding/xml"
-	"fmt"
 	"io/ioutil"
-	"log"
 	"net/http"
 	"sort"
 	"strconv"
-	"sync"
 	"time"
 
 	"github.com/itchyny/timefmt-go"
@@ -18,11 +15,9 @@ import (
 const (
 	POORLY_DRAWN_LINES = `http://feeds.feedburner.com/PoorlyDrawnLines`
 	XKCD               = `https://xkcd.com`
+	XKCD_CONFIG        = "/info.0.json"
 )
 
-//	type XkcdResponses struct {
-//		XkcdResponses []XkcdResponse
-//	}
 type Item struct {
 	XMLName        xml.Name `xml:"item"`
 	Title          string   `xml:"title"`
@@ -69,7 +64,6 @@ type XkcdResponse struct {
 var (
 	url          string
 	xkcdresponse XkcdResponse
-	ItemsData    []ItemData
 	xmlresponse  RssFeed
 	data         ItemData
 )
@@ -82,48 +76,68 @@ type ItemData struct {
 	PublishingDate time.Time `json:"publishing_date"`
 }
 
-func main() {
-	var wg sync.WaitGroup
-	wg.Add(2)
-	go func() {
-		defer wg.Done()
-		getXKCD()
-	}()
-	go func() {
-		defer wg.Done()
-		getPoorlyDrawnLines()
-	}()
-	wg.Wait()
-	fmt.Println(ItemsData)
-	sort.Slice(ItemsData, func(i, j int) bool {
-		return ItemsData[i].PublishingDate.Before(ItemsData[j].PublishingDate)
-	})
-	fmt.Println(len(ItemsData))
+func GetData() ([]ItemData, error) {
+	var errCh chan error = make(chan error, 2)
+	var dataCh chan []ItemData = make(chan []ItemData, 2)
+	var itemsdata []ItemData = []ItemData{}
+	defer close(errCh)
+	defer close(dataCh)
 
+	go func(data chan []ItemData, ch chan error) {
+		items, err := getXKCD()
+		data <- items
+		ch <- err
+	}(dataCh, errCh)
+
+	go func(data chan []ItemData, ch chan error) {
+		items, err := getPoorlyDrawnLines()
+		data <- items
+		ch <- err
+	}(dataCh, errCh)
+
+	for i := 0; i < cap(errCh); i += 1 {
+		err := <-errCh
+		if err != nil {
+			return nil, err
+		}
+	}
+	for i := 0; i < cap(dataCh); i += 1 {
+		data := <-dataCh
+		itemsdata = append(itemsdata, data...)
+	}
+
+	sort.Slice(itemsdata, func(i, j int) bool {
+		return itemsdata[i].PublishingDate.After(itemsdata[j].PublishingDate)
+	})
+
+	return itemsdata, nil
 }
 
-func getXKCD() {
+func getXKCD() ([]ItemData, error) {
+	var itemsdata []ItemData
 	for i := 0; i < 10; i++ {
 		if i == 0 {
-			url = XKCD + "/info.0.json"
+			url = XKCD + XKCD_CONFIG
 		} else {
-			url = XKCD + `/` + strconv.Itoa(i) + "/info.0.json"
+			url = XKCD + `/` + strconv.Itoa(i) + XKCD_CONFIG
 		}
 		resp, err := http.Get(url)
 		if err != nil {
-			// handle error
-			log.Fatalln(err)
+			return itemsdata, err
 		}
 		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			log.Fatalln(err)
+			return itemsdata, err
 		}
-		json.Unmarshal([]byte(string(body)), &xkcdresponse)
+		err = json.Unmarshal([]byte(string(body)), &xkcdresponse)
+		if err != nil {
+			return itemsdata, err
+		}
 		date := xkcdresponse.Year + `-` + xkcdresponse.Month + `-` + xkcdresponse.Day + ` 00:00:00 +0000`
 		t, err := timefmt.Parse(date, "%Y-%m-%d %T %z")
 		if err != nil {
-			log.Fatal(err)
+			return itemsdata, err
 		}
 		data = ItemData{
 			PictureUrl:     xkcdresponse.Img,
@@ -132,29 +146,31 @@ func getXKCD() {
 			WebUrl:         xkcdresponse.Link,
 			PublishingDate: t,
 		}
-		ItemsData = append(ItemsData, data)
+		itemsdata = append(itemsdata, data)
 	}
+	return itemsdata, nil
 }
-func getPoorlyDrawnLines() {
+
+func getPoorlyDrawnLines() ([]ItemData, error) {
+	var itemsdata []ItemData
 	resp, err := http.Get(POORLY_DRAWN_LINES)
 	if err != nil {
-		// handle error
-		log.Fatalln(err)
+		return itemsdata, err
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		log.Fatalln(err)
+		return itemsdata, err
 	}
 	err = xml.Unmarshal([]byte(string(body)), &xmlresponse)
 	if err != nil {
-		log.Fatalln(err)
+		return itemsdata, err
 	}
 	for i := 0; i < len(xmlresponse.RssFeed.Item); i++ {
 		date := xmlresponse.RssFeed.Item[i].PubDate
 		t, err := timefmt.Parse(date, "%a, %d %b %Y %T %z")
 		if err != nil {
-			log.Fatal(err)
+			return itemsdata, err
 		}
 		data = ItemData{
 			PictureUrl:     xmlresponse.RssFeed.Item[i].Link,
@@ -163,6 +179,7 @@ func getPoorlyDrawnLines() {
 			WebUrl:         POORLY_DRAWN_LINES,
 			PublishingDate: t,
 		}
-		ItemsData = append(ItemsData, data)
+		itemsdata = append(itemsdata, data)
 	}
+	return itemsdata, nil
 }

@@ -15,13 +15,9 @@
 package main
 
 import (
-	"time"
-
 	"github.com/Improwised/xkcd-api/cli"
 	"github.com/Improwised/xkcd-api/config"
 	"github.com/Improwised/xkcd-api/logger"
-	"github.com/Improwised/xkcd-api/routinewrapper"
-	"github.com/getsentry/sentry-go"
 	"go.uber.org/zap"
 )
 
@@ -34,20 +30,6 @@ func main() {
 		panic(err)
 	}
 	zap.ReplaceGlobals(logger)
-
-	// this function will logged error log in sentry
-	sentryLoggedFunc := func() {
-		err := recover()
-
-		if err != nil {
-			sentry.CurrentHub().Recover(err)
-			sentry.Flush(time.Second * 2)
-		}
-	}
-
-	// routine wrapper will handle go routine error also an log into sentry
-	routinewrapper.Init(sentryLoggedFunc)
-	defer sentryLoggedFunc()
 
 	err = cli.Init(cfg, logger)
 	if err != nil {
