@@ -15,7 +15,8 @@
 4. Copy `.env.example` as `.env` for environment variables.
 
 >**_NOTE:_**  The note content.
-  Following command is use to remove unused package from your `go.mod` and `go.sum` files.(If change any package)`go mod tidy`
+  Following command is use to remove unused package from your `go.mod` and `go.sum` files.(If change any package)   
+  `go mod tidy`
 
 5  **make start** : To start api, it basically runs `go run app.go api`
 
