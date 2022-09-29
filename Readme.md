@@ -1,4 +1,4 @@
-# Xkcd+PoorlyDrawnLines
+# Get first 10 from Xkcd+ 10 from PoorlyDrawnLines
 
 ### **Index**
 - [Run Locally](#run-locally)
