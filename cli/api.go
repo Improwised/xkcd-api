@@ -5,7 +5,6 @@ import (
 	"log"
 	"os"
 	"os/signal"
-	"time"
 
 	"github.com/Improwised/xkcd-api/config"
 	"github.com/Improwised/xkcd-api/routes"
@@ -43,8 +42,6 @@ func GetAPICommandDef(cfg config.AppConfig, logger *zap.Logger) cobra.Command {
 			if err := app.Listen(cfg.Port); err != nil {
 				log.Panic(err)
 			}
-
-			time.Sleep(time.Second * 10) // Exit after 10s
 
 			return nil
 

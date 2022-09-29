@@ -21,7 +21,7 @@ func Setup(app *fiber.App) error {
 
 	v1 := router.Group("/v1")
 
-	err := setupUserController(v1)
+	err := setupItemController(v1)
 	if err != nil {
 		return err
 	}
@@ -30,13 +30,13 @@ func Setup(app *fiber.App) error {
 	return nil
 }
 
-func setupUserController(v1 fiber.Router) error {
+func setupItemController(v1 fiber.Router) error {
 	svcController, err := controller.NewItemController()
 	if err != nil {
 		return err
 	}
 
-	v1.Get("/", svcController.XkcdGet)
+	v1.Get("/getdata", svcController.XkcdGet)
 
 	return nil
 }

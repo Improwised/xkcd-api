@@ -61,13 +61,6 @@ type XKCDResponse struct {
 	Day        string `json:"day"`
 }
 
-var (
-	URL          string
-	xkcdResponse XKCDResponse
-	xmlResponse  RssFeed
-	data         ItemData
-)
-
 type ItemData struct {
 	PictureUrl     string    `json:"picurl,omitempty"`
 	Title          string    `json:"title,omitempty"`
@@ -77,9 +70,11 @@ type ItemData struct {
 }
 
 func GetData() ([]ItemData, error) {
-	var errCh chan error = make(chan error, 2)
-	var dataCh chan []ItemData = make(chan []ItemData, 2)
-	var itemsData []ItemData = []ItemData{}
+	var (
+		errCh     chan error      = make(chan error, 2)
+		dataCh    chan []ItemData = make(chan []ItemData, 2)
+		itemsData []ItemData      = []ItemData{}
+	)
 	defer close(errCh)
 	defer close(dataCh)
 
@@ -114,7 +109,11 @@ func GetData() ([]ItemData, error) {
 }
 
 func getXKCD() ([]ItemData, error) {
-	var itemsData []ItemData
+	var (
+		itemsData    []ItemData
+		xkcdResponse XKCDResponse
+		URL          string
+	)
 	for i := 0; i < 10; i++ {
 		if i == 0 {
 			URL = fmt.Sprintf(`%s%s`, XKCD, XKCD_CONFIG)
@@ -134,7 +133,7 @@ func getXKCD() ([]ItemData, error) {
 		if err != nil {
 			return itemsData, err
 		}
-		date := fmt.Sprintf(`%s-%s-%s %s`, xkcdResponse.Year, xkcdResponse.Month, xkcdResponse.Day, ` 00:00:00 +0000`)
+		date := fmt.Sprintf(`%s-%s-%s %s`, xkcdResponse.Year, xkcdResponse.Month, xkcdResponse.Day, `00:00:00 +0000`)
 		publishingDate, err := timefmt.Parse(date, "%Y-%m-%d %T %z")
 		if err != nil {
 			return itemsData, err
@@ -152,6 +151,7 @@ func getXKCD() ([]ItemData, error) {
 
 func getPoorlyDrawnLines() ([]ItemData, error) {
 	var itemsData []ItemData
+	var xmlResponse RssFeed
 	resp, err := http.Get(POORLY_DRAWN_LINES)
 	if err != nil {
 		return itemsData, err
@@ -171,14 +171,13 @@ func getPoorlyDrawnLines() ([]ItemData, error) {
 		if err != nil {
 			return itemsData, err
 		}
-		data = ItemData{
+		itemsData = append(itemsData, ItemData{
 			PictureUrl:     xmlResponse.RSSFeed.Item[i].Link,
 			Title:          xmlResponse.RSSFeed.Item[i].Title,
 			Description:    xmlResponse.RSSFeed.Item[i].Description,
 			WebUrl:         POORLY_DRAWN_LINES,
 			PublishingDate: t,
-		}
-		itemsData = append(itemsData, data)
+		})
 	}
 	return itemsData, nil
 }

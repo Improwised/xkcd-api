@@ -1,4 +1,4 @@
-FROM golang:1.16.2-alpine AS build
+FROM golang:1.19.1-alpine3.16 AS build
 ENV CGO_ENABLED=0
 
 WORKDIR /go/src/app
