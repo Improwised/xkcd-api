@@ -6,7 +6,7 @@
 - [Run in Docker](#run-in-docker)
 ---
 ### **Run Locally**
-- Pre-requictic: golang version 1. 19 should be installed.
+- Prerequisite: golang version 1. 19 should be installed.
 1. Clone this Repository. 
 2. Open terminal and go inside this Repository
 3. To sync go packages you need to run following command.
