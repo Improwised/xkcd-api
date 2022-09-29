@@ -3,7 +3,7 @@ module github.com/Improwised/xkcd-api
 go 1.16
 
 require (
-	github.com/gofiber/fiber/v2 v2.19.0
+	github.com/gofiber/fiber/v2 v2.37.1
 	github.com/itchyny/timefmt-go v0.1.4
 	github.com/joho/godotenv v1.4.0
 	github.com/kelseyhightower/envconfig v1.4.0
@@ -12,5 +12,5 @@ require (
 	github.com/spf13/cobra v1.2.1
 	github.com/stretchr/testify v1.7.0
 	go.uber.org/zap v1.19.1
-	golang.org/x/crypto v0.0.0-20210513164829-c07d793c2f9a
+	golang.org/x/crypto v0.0.0-20220214200702-86341886e292
 )
