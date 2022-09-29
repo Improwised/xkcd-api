@@ -50,32 +50,3 @@ type GenericSuccessResponse struct {
 	StatusCode int    `json:"status_code"`
 	Message    string `json:"message"`
 }
-
-// UserGetResponseWrapper for get user response
-// swagger:response getUsersResponse
-type UserGetResponseWrapper struct {
-	// in: body
-	Body struct {
-		User models.User `json:"user"`
-	}
-}
-
-// UserCreateRequestWrapper for user request
-// swagger:parameters createUserRequest
-type UserCreateRequestWrapper struct {
-	// in: body
-	Body struct {
-		FirstName string `json:"first_name"`
-		LastName  string `json:"last_name"`
-		Email     string `json:"email"`
-	}
-}
-
-// UserCreateResponseWrapper for create user response
-// swagger:response createUserResponse
-type UserCreateResponseWrapper struct {
-	// in: body
-	Body struct {
-		User models.User `json:"user"`
-	}
-}
