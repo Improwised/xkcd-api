@@ -36,7 +36,7 @@ func setupUserController(v1 fiber.Router) error {
 		return err
 	}
 
-	v1.Get("/", svcController.UserGet)
+	v1.Get("/", svcController.XkcdGet)
 
 	return nil
 }

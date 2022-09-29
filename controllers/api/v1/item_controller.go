@@ -18,8 +18,7 @@ func NewItemController() (*ItemController, error) {
 	return &ItemController{}, nil
 }
 
-func (ctrl *ItemController) UserGet(c *fiber.Ctx) error {
-	// fmt.Println("here comes")
+func (ctrl *ItemController) XkcdGet(c *fiber.Ctx) error {
 	items, err := services.GetData()
 
 	if err != nil {
