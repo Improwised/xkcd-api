@@ -3,10 +3,10 @@ package services
 import (
 	"encoding/json"
 	"encoding/xml"
+	"fmt"
 	"io/ioutil"
 	"net/http"
 	"sort"
-	"strconv"
 	"time"
 
 	"github.com/itchyny/timefmt-go"
@@ -44,10 +44,10 @@ type Channel struct {
 }
 type RssFeed struct {
 	XMLName xml.Name `xml:"rss"`
-	RssFeed Channel  `xml:"channel"`
+	RSSFeed Channel  `xml:"channel"`
 }
 
-type XkcdResponse struct {
+type XKCDResponse struct {
 	Month      string `json:"month"`
 	Num        int    `json:"num"`
 	Link       string `json:"link"`
@@ -62,9 +62,9 @@ type XkcdResponse struct {
 }
 
 var (
-	url          string
-	xkcdresponse XkcdResponse
-	xmlresponse  RssFeed
+	URL          string
+	xkcdResponse XKCDResponse
+	xmlResponse  RssFeed
 	data         ItemData
 )
 
@@ -79,7 +79,7 @@ type ItemData struct {
 func GetData() ([]ItemData, error) {
 	var errCh chan error = make(chan error, 2)
 	var dataCh chan []ItemData = make(chan []ItemData, 2)
-	var itemsdata []ItemData = []ItemData{}
+	var itemsData []ItemData = []ItemData{}
 	defer close(errCh)
 	defer close(dataCh)
 
@@ -103,83 +103,82 @@ func GetData() ([]ItemData, error) {
 	}
 	for i := 0; i < cap(dataCh); i += 1 {
 		data := <-dataCh
-		itemsdata = append(itemsdata, data...)
+		itemsData = append(itemsData, data...)
 	}
 
-	sort.Slice(itemsdata, func(i, j int) bool {
-		return itemsdata[i].PublishingDate.After(itemsdata[j].PublishingDate)
+	sort.Slice(itemsData, func(i, j int) bool {
+		return itemsData[i].PublishingDate.After(itemsData[j].PublishingDate)
 	})
 
-	return itemsdata, nil
+	return itemsData, nil
 }
 
 func getXKCD() ([]ItemData, error) {
-	var itemsdata []ItemData
+	var itemsData []ItemData
 	for i := 0; i < 10; i++ {
 		if i == 0 {
-			url = XKCD + XKCD_CONFIG
+			URL = fmt.Sprintf(`%s%s`, XKCD, XKCD_CONFIG)
 		} else {
-			url = XKCD + `/` + strconv.Itoa(i) + XKCD_CONFIG
+			URL = fmt.Sprintf(`%s/%d%s`, XKCD, i, XKCD_CONFIG)
 		}
-		resp, err := http.Get(url)
+		resp, err := http.Get(URL)
 		if err != nil {
-			return itemsdata, err
+			return itemsData, err
 		}
 		defer resp.Body.Close()
 		body, err := ioutil.ReadAll(resp.Body)
 		if err != nil {
-			return itemsdata, err
+			return itemsData, err
 		}
-		err = json.Unmarshal([]byte(string(body)), &xkcdresponse)
+		err = json.Unmarshal([]byte(string(body)), &xkcdResponse)
 		if err != nil {
-			return itemsdata, err
+			return itemsData, err
 		}
-		date := xkcdresponse.Year + `-` + xkcdresponse.Month + `-` + xkcdresponse.Day + ` 00:00:00 +0000`
-		t, err := timefmt.Parse(date, "%Y-%m-%d %T %z")
+		date := fmt.Sprintf(`%s-%s-%s %s`, xkcdResponse.Year, xkcdResponse.Month, xkcdResponse.Day, ` 00:00:00 +0000`)
+		publishingDate, err := timefmt.Parse(date, "%Y-%m-%d %T %z")
 		if err != nil {
-			return itemsdata, err
+			return itemsData, err
 		}
-		data = ItemData{
-			PictureUrl:     xkcdresponse.Img,
-			Title:          xkcdresponse.Title,
-			Description:    xkcdresponse.News,
-			WebUrl:         xkcdresponse.Link,
-			PublishingDate: t,
-		}
-		itemsdata = append(itemsdata, data)
+		itemsData = append(itemsData, ItemData{
+			PictureUrl:     xkcdResponse.Img,
+			Title:          xkcdResponse.Title,
+			Description:    xkcdResponse.News,
+			WebUrl:         xkcdResponse.Link,
+			PublishingDate: publishingDate,
+		})
 	}
-	return itemsdata, nil
+	return itemsData, nil
 }
 
 func getPoorlyDrawnLines() ([]ItemData, error) {
-	var itemsdata []ItemData
+	var itemsData []ItemData
 	resp, err := http.Get(POORLY_DRAWN_LINES)
 	if err != nil {
-		return itemsdata, err
+		return itemsData, err
 	}
 	defer resp.Body.Close()
 	body, err := ioutil.ReadAll(resp.Body)
 	if err != nil {
-		return itemsdata, err
+		return itemsData, err
 	}
-	err = xml.Unmarshal([]byte(string(body)), &xmlresponse)
+	err = xml.Unmarshal([]byte(string(body)), &xmlResponse)
 	if err != nil {
-		return itemsdata, err
+		return itemsData, err
 	}
-	for i := 0; i < len(xmlresponse.RssFeed.Item); i++ {
-		date := xmlresponse.RssFeed.Item[i].PubDate
+	for i := 0; i < len(xmlResponse.RSSFeed.Item); i++ {
+		date := xmlResponse.RSSFeed.Item[i].PubDate
 		t, err := timefmt.Parse(date, "%a, %d %b %Y %T %z")
 		if err != nil {
-			return itemsdata, err
+			return itemsData, err
 		}
 		data = ItemData{
-			PictureUrl:     xmlresponse.RssFeed.Item[i].Link,
-			Title:          xmlresponse.RssFeed.Item[i].Title,
-			Description:    xmlresponse.RssFeed.Item[i].Description,
+			PictureUrl:     xmlResponse.RSSFeed.Item[i].Link,
+			Title:          xmlResponse.RSSFeed.Item[i].Title,
+			Description:    xmlResponse.RSSFeed.Item[i].Description,
 			WebUrl:         POORLY_DRAWN_LINES,
 			PublishingDate: t,
 		}
-		itemsdata = append(itemsdata, data)
+		itemsData = append(itemsData, data)
 	}
-	return itemsdata, nil
+	return itemsData, nil
 }
