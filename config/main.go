@@ -8,7 +8,7 @@ import (
 	"github.com/kelseyhightower/envconfig"
 )
 
-const projectDirName = "golang-api"
+const projectDirName = "xkcd-api"
 
 // AllConfig variable of type AppConfig
 var AllConfig AppConfig
@@ -19,7 +19,6 @@ type AppConfig struct {
 	Debug         bool   `envconfig:"DEBUG"`
 	Env           string `envconfig:"APP_ENV"`
 	Port          string `envconfig:"APP_PORT"`
-	DB            DBConfig
 }
 
 // GetConfig Collects all configs
